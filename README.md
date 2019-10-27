@@ -14,3 +14,7 @@ After working on ReactiveLists at PlanGrid, I wanted to see if we could simplify
 ## Installation
 
 This code is currently only available as a Swift Package.
+
+## Example Usage
+
+See the [ANReactiveTableKitExample](https://github.com/anayini/ANReactiveTableKitExample) repo for an example of using this library.
