@@ -1,8 +1,9 @@
 //
 //  TableCellModel.swift
+//  ANReactiveTableKit
 //
-//
-//  Created by Arjun Nayini on 10/2/19.
+//  Created by Arjun Nayini on 9/25/19.
+//  Copyright © 2019 Arjun Nayini. All rights reserved.
 //
 
 import Foundation
