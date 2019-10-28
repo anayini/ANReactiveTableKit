@@ -10,30 +10,30 @@ import Combine
 import Foundation
 import UIKit
 
-public final class TableCoordinator: NSObject {
-    private static let _empty = TableModel(sections: [])
+public protocol TableModelConvertible {
+    func tableModel() -> TableModel
+}
 
+public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITableViewDelegate {
     private let _tableView: UITableView
-    private let _dataSource: ANListKitDiffableDataSource
+    private let _dataSource: ANListKitDiffableDataSource<T>
+    private let _tableSubject: CurrentValueSubject<T, Never>
 
-    public init(tableView: UITableView) {
+    public init(
+        subject: CurrentValueSubject<T, Never>,
+        tableView: UITableView
+    ) {
         self._tableView = tableView
+        self._tableSubject = subject
         self._dataSource = ANListKitDiffableDataSource(
-            tableView: tableView,
-            tableViewModel: TableCoordinator._empty
+            tableView: tableView
         ) { tableView, sectionViewModel, cellViewModel in return nil }
         super.init()
         self._tableView.delegate = self
-
-    }
-
-    public var tableViewModel: TableModel {
-        get {
-            return _dataSource.tableViewModel
-        }
-        set {
-            self._registerCells(for: newValue)
-            _dataSource.tableViewModel = newValue
+        _ = self._tableSubject.receive(on: RunLoop.main).sink { tableModelConvertible in
+            let tableModel = tableModelConvertible.tableModel()
+            self._registerCells(for: tableModelConvertible.tableModel())
+            self._dataSource.tableModel = tableModel
         }
     }
 
@@ -46,21 +46,35 @@ public final class TableCoordinator: NSObject {
                 self._tableView.register(cellClass, forCellReuseIdentifier: reuseIdentifier)
         }
     }
-}
-
-extension TableCoordinator: UITableViewDelegate {
+    
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        self.tableViewModel.sections[indexPath.section].cellViewModels[indexPath.row].didSelect?()
+        let tableModel = self._tableSubject.value.tableModel()
+        tableModel.sections[indexPath.section].cellViewModels[indexPath.row].didSelect?()
     }
 }
 
-private class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String, String> {
-    var tableViewModel: TableModel
+private class ANListKitDiffableDataSource<T: TableModelConvertible>: UITableViewDiffableDataSource<String, String> {
     let cellProvider: ANListKitCellProvider
+    var tableModel: TableModel {
+        didSet {
+            let oldSnapshot = self.snapshot()
+            var newSnapshot = oldSnapshot
+            newSnapshot.deleteSections(oldSnapshot.sectionIdentifiers)
+            newSnapshot.deleteAllItems()
+            newSnapshot.appendSections(tableModel.sections.map { $0.id })
+            for section in tableModel.sections {
+                newSnapshot.appendItems(
+                    section.cellViewModels.map { $0.id },
+                    toSection: section.id
+                )
+            }
+            self.apply(newSnapshot, animatingDifferences: true)
+        }
+    }
 
-    init(tableView: UITableView, tableViewModel: TableModel, cellProvider: @escaping ANListKitCellProvider) {
+    init(tableView: UITableView, cellProvider: @escaping ANListKitCellProvider) {
         self.cellProvider = cellProvider
-        self.tableViewModel = tableViewModel
+        self.tableModel = TableModel(sections: [])
         // We want to use our own type of provider function, so we call the superclass initializer with
         // a noop cell provider and then override `tableView(tableView:cellForRowAt:)`
         // to use an `ANListKitCellProvider`
@@ -68,19 +82,19 @@ private class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String,
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
-        return self.tableViewModel.sections.count
+        return self.tableModel.sections.count
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        guard section <= self.tableViewModel.sections.endIndex else {
-            let count = self.tableViewModel.sections.count
+        guard section <= self.tableModel.sections.endIndex else {
+            let count = tableModel.sections.count
             fatalError("Unexpected section index: \(section).  Highest expected index is \(count)")
         }
-        return self.tableViewModel.sections[section].cellViewModels.count
+        return tableModel.sections[section].cellViewModels.count
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cellViewModel = self.tableViewModel.sections[indexPath.section].cellViewModels[indexPath.row]
+        let cellViewModel = self.tableModel.sections[indexPath.section].cellViewModels[indexPath.row]
         let reuseIdentifier = cellViewModel.registrationInfo.reuseIdentifier
         let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
         cellViewModel.apply(to: cell)
@@ -88,7 +102,7 @@ private class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String,
     }
 
     override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        guard section <= self.tableViewModel.sections.endIndex else { return nil }
-        return self.tableViewModel.sections[section].headerTitle
+        guard section <= self.tableModel.sections.endIndex else { return nil }
+        return self.tableModel.sections[section].headerTitle
     }
 }
