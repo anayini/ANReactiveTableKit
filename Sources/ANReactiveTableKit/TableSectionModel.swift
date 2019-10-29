@@ -8,6 +8,7 @@
 
 import Foundation
 
+/// View model that represents a single section of the `UITableView`
 public struct TableSectionModel: StringIdentifiable {
     public let id: String
     let cellViewModels: [TableCellViewModel]

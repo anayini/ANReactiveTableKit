@@ -9,7 +9,5 @@
 import Foundation
 import UIKit
 
-public typealias ANListKitCellProvider = (UITableView, TableSectionModel, TableCellViewModel) -> UITableViewCell?
-
 /// :nodoc:
 public typealias DidSelectClosure = () -> Void

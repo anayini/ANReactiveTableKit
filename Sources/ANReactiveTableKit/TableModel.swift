@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 
+/// View Model that represents the state of the `UITableView`
 public struct TableModel {
     let sections: [TableSectionModel]
     public init(sections: [TableSectionModel]) {

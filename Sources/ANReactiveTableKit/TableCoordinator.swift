@@ -10,13 +10,23 @@ import Combine
 import Foundation
 import UIKit
 
+/// Conformers can produce a `TableModel` representation of themselves.  This is used
+/// so that the TableCoordinator can take any  `CurrentValueSubject` that produces
+/// a `TableModelConvertible`.   Users only have to conform and pass a `CurrentValueSubject`
+/// to the `TableCoordinator`.  This helps separate the state object from `ANReactiveTableKit`
+/// and makes the code more testable.
 public protocol TableModelConvertible {
     func tableModel() -> TableModel
 }
 
+/// `TableCoordinator` is responsible for taking in changing state and automatically updating the
+/// `UITableView` to reflect the new state.  Users create a  `TableCoordinator` by passing in
+/// a `UITableView` and a `CurrentValueSubject` that produces a `TableModelConvertible`
+/// type.  At that point, the user only has to `send()` values to the `CurrentValueSubject` as their
+/// data changes and the `TableCoordinator` will efficiently update the `UITableView` UI.
 public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITableViewDelegate {
     private let _tableView: UITableView
-    private let _dataSource: ANListKitDiffableDataSource<T>
+    private let _dataSource: ANListKitDiffableDataSource
     private let _tableSubject: CurrentValueSubject<T, Never>
 
     public init(
@@ -27,7 +37,7 @@ public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITable
         self._tableSubject = subject
         self._dataSource = ANListKitDiffableDataSource(
             tableView: tableView
-        ) { tableView, sectionViewModel, cellViewModel in return nil }
+        )
         super.init()
         self._tableView.delegate = self
         _ = self._tableSubject.receive(on: RunLoop.main).sink { tableModelConvertible in
@@ -53,8 +63,8 @@ public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITable
     }
 }
 
-private class ANListKitDiffableDataSource<T: TableModelConvertible>: UITableViewDiffableDataSource<String, String> {
-    let cellProvider: ANListKitCellProvider
+/// Internal subclass of `UITableViewDiffableDataSource` that handles the updates of the `UITableView`.
+class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String, String> {
     var tableModel: TableModel {
         didSet {
             let oldSnapshot = self.snapshot()
@@ -72,12 +82,8 @@ private class ANListKitDiffableDataSource<T: TableModelConvertible>: UITableView
         }
     }
 
-    init(tableView: UITableView, cellProvider: @escaping ANListKitCellProvider) {
-        self.cellProvider = cellProvider
+    init(tableView: UITableView) {
         self.tableModel = TableModel(sections: [])
-        // We want to use our own type of provider function, so we call the superclass initializer with
-        // a noop cell provider and then override `tableView(tableView:cellForRowAt:)`
-        // to use an `ANListKitCellProvider`
         super.init(tableView: tableView) { _, _, _ -> UITableViewCell? in return nil }
     }
 
