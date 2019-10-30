@@ -1,0 +1,17 @@
+name: Unit Test
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Switch to Xcode 11
+      run: sudo xcode-select --switch /Applications/Xcode_11.1.app
+    - name: Generate xcodeproj
+      run: swift package generate-xcodeproj
+    - name: Run tests
+      run: xcodebuild test -destination 'name=iPhone 11' -scheme 'ANReactiveTableKit-Package'
