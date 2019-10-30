@@ -67,10 +67,7 @@ public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITable
 class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String, String> {
     var tableModel: TableModel {
         didSet {
-            let oldSnapshot = self.snapshot()
-            var newSnapshot = oldSnapshot
-            newSnapshot.deleteSections(oldSnapshot.sectionIdentifiers)
-            newSnapshot.deleteAllItems()
+            var newSnapshot = NSDiffableDataSourceSnapshot<String, String>()
             newSnapshot.appendSections(tableModel.sections.map { $0.id })
             for section in tableModel.sections {
                 newSnapshot.appendItems(
