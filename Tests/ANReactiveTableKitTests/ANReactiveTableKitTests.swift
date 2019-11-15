@@ -1,8 +1,10 @@
-import XCTest
 @testable import ANReactiveTableKit
+import XCTest
 
 final class ANReactiveTableKitTests: XCTestCase {
-    func testExample() {}
+    func testExample() {
+        XCTAssert(true)
+    }
 
     static var allTests = [
         ("testExample", testExample),
