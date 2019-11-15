@@ -88,3 +88,6 @@ type_body_length: 500
 function_body_length: 200
 
 cyclomatic_complexity: 10
+
+trailing_comma:
+  mandatory_comma: true

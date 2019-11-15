@@ -56,7 +56,7 @@ public final class TableCoordinator<T: TableModelConvertible>: NSObject, UITable
                 self._tableView.register(cellClass, forCellReuseIdentifier: reuseIdentifier)
         }
     }
-    
+
     public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let tableModel = self._tableSubject.value.tableModel()
         tableModel.sections[indexPath.section].cellViewModels[indexPath.row].didSelect?()
@@ -81,7 +81,7 @@ class ANListKitDiffableDataSource: UITableViewDiffableDataSource<String, String>
 
     init(tableView: UITableView) {
         self.tableModel = TableModel(sections: [])
-        super.init(tableView: tableView) { _, _, _ -> UITableViewCell? in return nil }
+        super.init(tableView: tableView) { _, _, _ -> UITableViewCell? in nil }
     }
 
     override func numberOfSections(in tableView: UITableView) -> Int {
